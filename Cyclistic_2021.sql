@@ -1,5 +1,22 @@
+-- Active: 1666274076413@@127.0.0.1@3306@cyclistic
+-- Author : Elfrid Hasman
 
-WITH union_all_monthy_table AS(
+-------------------
+#Prepare your data
+-------------------
+-- Download source data every month 2021 (https://divvy-tripdata.s3.amazonaws.com/index.html)
+-- Afer download it, unzip file and save in one folder call cyclistic dataset or whatever you want
+-- Open file in excel to know what the field and data type 
+-- The data is to large to combine all month in excel, that's why i choose MySQL to combine the data
+-- Import data to MySQL
+-- Query data
+
+-- Choose database cyclistic
+USE cyclistic;
+
+-- Combine all month data in one temporary table call union_all_month
+-- UNION ALL means, combine all the data regardless of whetever the data is duplicated or not
+WITH union_all_month_table AS(
 	SELECT * FROM `202101-divvy-tripdata`
 	UNION ALL
 	SELECT * FROM `202102-divvy-tripdata`
@@ -24,9 +41,10 @@ WITH union_all_monthy_table AS(
 	UNION ALL
 	SELECT * FROM `202112-divvy-tripdata`
 )
-SELECT COUNT(*) FROM union_all_monthy_table;
+SELECT COUNT(*) FROM union_all_month_table;
 
-WITH union_monthy_table AS(
+-- But in this case I prefer to choose UNION to remove all duplicate before the data combine to one table, 
+WITH union_month_table AS(
 	SELECT * FROM `202101-divvy-tripdata`
 	UNION
 	SELECT * FROM `202102-divvy-tripdata`
@@ -51,8 +69,10 @@ WITH union_monthy_table AS(
 	UNION
 	SELECT * FROM `202112-divvy-tripdata`
 ),
+
+--  After that, remove all NULL value from every field, so that the data clean from null value
 yearly_not_null AS(
-SELECT * FROM union_monthy_table
+SELECT * FROM union_month_table
 WHERE ride_id IS NOT NULL 
 	AND rideable_type IS NOT NULL
 	AND started_at IS NOT NULL 
@@ -67,12 +87,16 @@ WHERE ride_id IS NOT NULL
 	AND end_lng IS NOT NULL
 	AND member_casual IS NOT NULL
 ),
+
+-- Remove all space in start_station_name & end_station_name
 remove_space_station_name AS(
 SELECT ride_id,
 			TRIM(start_station_name) AS new_start_station_name, 
 			TRIM(end_station_name) AS new_end_station_name  
 FROM yearly_not_null
 )
+
+-- After the data is clean, select and use it to 
 SELECT yearly_not_null.ride_id,	
 	yearly_not_null.rideable_type,
 	yearly_not_null.started_at,
@@ -89,6 +113,7 @@ SELECT yearly_not_null.ride_id,
 FROM yearly_not_null LEFT JOIN remove_space_station_name 
 ON yearly_not_null.ride_id = remove_space_station_name.ride_id;
 
+-- create TEMPORARY table cyclistic_2021
 CREATE TEMPORARY TABLE cyclistic_2021(
 	SELECT * FROM `202101-divvy-tripdata`
 	UNION
@@ -115,13 +140,16 @@ CREATE TEMPORARY TABLE cyclistic_2021(
 	SELECT * FROM `202112-divvy-tripdata`
 );
 
+-- count of rideID group by month to know the trend cyclistics over month
 SELECT MONTHNAME(started_at) AS month_name, 
 	COUNT(*) AS count_of_rideID FROM cyclistic_2021
 GROUP BY month_name
 ORDER BY MONTH(started_at);
 
+-- select DISTINCT to know what the member category in member_casual column
 SELECT DISTINCT member_casual FROM cyclistic_2021;
 
+-- count member category over month
 SELECT MONTHNAME(started_at) AS month_name,
 	COUNT(CASE WHEN member_casual = 'member' THEN ride_id ELSE NULL END) AS member,
 	COUNT(CASE WHEN member_casual = 'casual' THEN ride_id ELSE NULL END) AS casual,
@@ -135,11 +163,28 @@ FROM cyclistic_2021
 GROUP BY MONTH(started_at)
 ORDER BY MONTH(started_at);
 
+-- select DISTINCT trideable_type
 SELECT DISTINCT rideable_type FROM cyclistic_2021;
 
+-- select rideable_type group by month
 SELECT COUNT(CASE WHEN rideable_type = 'electric_bike' THEN ride_id ELSE NULL END) AS electric_bike,
 	COUNT(CASE WHEN rideable_type = 'docked_bike' THEN ride_id ELSE NULL END) AS docked_bike,
 	COUNT(CASE WHEN rideable_type = 'classic_bike' THEN ride_id ELSE NULL END) AS classic_bike
 FROM cyclistic_2021
 GROUP BY MONTH(started_at);
+
+-- what day with the most cyclists
+SELECT DAYNAME(started_at) AS day_name,
+	COUNT(*) AS count_of_rideID
+FROM cyclistic_2021
+GROUP BY WEEKDAY(started_at);
+
+-- what day with the most cyclists order by count_of_rideID to sort the data on decending order
+SELECT DAYNAME(started_at) AS day_name,
+	COUNT(*) AS count_of_rideID
+FROM cyclistic_2021
+GROUP BY WEEKDAY(started_at)
+ORDER BY count_of_rideID DESC;
+
+-- Thank you (Maybe next time I will add or update some code and documentation here)
 
