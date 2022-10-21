@@ -1,9 +1,9 @@
 -- Active: 1666274076413@@127.0.0.1@3306@cyclistic
 -- Author : Elfrid Hasman
 
--------------------
-#Prepare your data
--------------------
+---------------------
+--Prepare your data--
+---------------------
 -- Download source data every month 2021 (https://divvy-tripdata.s3.amazonaws.com/index.html)
 -- Afer download it, unzip file and save in one folder call cyclistic dataset or whatever you want
 -- Open file in excel to know what the field and data type 
@@ -11,7 +11,7 @@
 -- Import data to MySQL
 -- Query data
 
--- Choose database cyclistic
+-- Choose/USE database cyclistic
 USE cyclistic;
 
 -- Combine all month data in one temporary table call union_all_month
@@ -44,6 +44,9 @@ WITH union_all_month_table AS(
 SELECT COUNT(*) FROM union_all_month_table;
 
 -- But in this case I prefer to choose UNION to remove all duplicate before the data combine to one table, 
+-- CREATE TEMPORARY TABLE cyclistic_2021
+
+CREATE TEMPORARY TABLE cyclistic_2021(
 WITH union_month_table AS(
 	SELECT * FROM `202101-divvy-tripdata`
 	UNION
@@ -111,34 +114,22 @@ SELECT yearly_not_null.ride_id,
 	yearly_not_null.end_lng,
 	yearly_not_null.member_casual
 FROM yearly_not_null LEFT JOIN remove_space_station_name 
-ON yearly_not_null.ride_id = remove_space_station_name.ride_id;
+ON yearly_not_null.ride_id = remove_space_station_name.ride_id);
+-- End of TEMPORARY TABLE, you can export data to txt or connect to data visualization tools like tableau, powerbi or etc
 
--- create TEMPORARY table cyclistic_2021
-CREATE TEMPORARY TABLE cyclistic_2021(
-	SELECT * FROM `202101-divvy-tripdata`
-	UNION
-	SELECT * FROM `202102-divvy-tripdata`
-	UNION
-	SELECT * FROM `202103-divvy-tripdata`
-	UNION
-	SELECT * FROM `202104-divvy-tripdata`
-	UNION
-	SELECT * FROM `202105-divvy-tripdata`
-	UNION
-	SELECT * FROM `202106-divvy-tripdata`
-	UNION
-	SELECT * FROM `202107-divvy-tripdata`
-	UNION
-	SELECT * FROM `202108-divvy-tripdata`
-	UNION
-	SELECT * FROM `202109-divvy-tripdata`
-	UNION
-	SELECT * FROM `202110-divvy-tripdata`
-	UNION
-	SELECT * FROM `202111-divvy-tripdata`
-	UNION
-	SELECT * FROM `202112-divvy-tripdata`
-);
+-- count the number of ride_id
+SELECT COUNT(*) FROM cyclistic_2021;
+
+-- count the number of ride_id GROUP BY member_casual
+SELECT member_casual, 
+	COUNT(*) AS count_rideID FROM cyclistic_2021
+GROUP BY member_casual;
+
+-- count the number of ride_id GROUP BY rideable_bike
+SELECT rideable_type,
+	COUNT(*) AS count_of_rideID
+FROM cyclistic_2021
+GROUP BY rideable_type;
 
 -- count of rideID group by month to know the trend cyclistics over month
 SELECT MONTHNAME(started_at) AS month_name, 
@@ -186,5 +177,5 @@ FROM cyclistic_2021
 GROUP BY WEEKDAY(started_at)
 ORDER BY count_of_rideID DESC;
 
--- Thank you (Maybe next time I will add or update some code and documentation here)
+-- Thank you
 
